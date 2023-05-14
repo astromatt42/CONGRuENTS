@@ -85,7 +85,7 @@ void write_2D_file( unsigned int nx, unsigned int ny, double **data, char *label
 }
 
 
-void write_2D_spec_file( unsigned int n_gal, unsigned int n_E, double **data, double *E__GeV, double **tau_gg, double **tau_EBL, double *distmod, char *label, char *filepath )
+void write_2D_spec_file_obs( unsigned int n_gal, unsigned int n_E, double **data, double *E__GeV, double **tau_gg, double **tau_EBL, double *distmod, char *label, char *filepath )
 {
     FILE *outfile;
     unsigned int i, j;
@@ -119,7 +119,38 @@ void write_2D_spec_file( unsigned int n_gal, unsigned int n_E, double **data, do
 }
 
 
+void write_2D_spec_file_internal( unsigned int n_gal, unsigned int n_E, double **data, double *E__GeV, double **tau_gg, char *label, char *filepath )
+{
+    FILE *outfile;
+    unsigned int i, j;
+     
+    // open file for writing
+    outfile = fopen( filepath, "w" );
+    if (outfile == NULL)
+    {
+        printf("Error writing file %s: can't open output file\n", filepath);
+    }
+    else
+    {
+        if (label != NULL)
+        {
+            fprintf( outfile, "%s\n", label );
+        }
 
+        for (i = 0; i < n_gal; i++)
+        {
+            for (j = 0; j < n_E; j++)
+            {
+                fprintf( outfile, "%le ", data[i][j] * exp(-tau_gg[i][j]) * pow( E__GeV[j], 2 ) );
+            }
+            fprintf( outfile, "\n" );
+        }
+        fclose( outfile );
+        printf("Successfully written file %s\n", filepath);
+    }
+    free( filepath );
+    return;
+}
 
 
 

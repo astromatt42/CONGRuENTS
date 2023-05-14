@@ -1007,8 +1007,20 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
             }
             gsl_so1D_free( gso1D_data );
         }
-        write_2D_spec_file( n_gal, n_E_gam, data, E_gam__GeV, tau_gg, tau_EBL, distmod, "E^2 dN/dE [GeV cmm2 sm1]", string_cat(outfp, filelist[k]) );
+        write_2D_spec_file_obs( n_gal, n_E_gam, data, E_gam__GeV, tau_gg, tau_EBL, distmod, "E^2 dN/dE [GeV cmm2 sm1]", string_cat(outfp, filelist[k]) );
     }
+
+    char filelist_2[14][28] = { "/spec_pi_internal.txt", "/spec_IC_1_z1_internal.txt", "/spec_IC_2_z1_internal.txt", "/spec_BS_1_z1_internal.txt", "/spec_BS_2_z1_internal.txt", 
+                        "/spec_SY_1_z1_internal.txt", "/spec_SY_2_z1_internal.txt", "/spec_IC_1_z2_internal.txt", "/spec_IC_2_z2_internal.txt", "/spec_SY_1_z2_internal.txt", 
+                        "/spec_SY_2_z2_internal.txt", "/spec_pi_fcal1_internal.txt", "/spec_nu_internal.txt", "/spec_FF_internal.txt" };
+
+    for (k = 0; k < 14; k++)
+    {
+        write_2D_spec_file_internal( n_gal, n_E_gam, speclist[k], E_gam__GeV, tau_gg, "E^2 dN/dE [GeV sm1]", string_cat(outfp, filelist_2[k]) );
+    }
+
+
+
 
 
 
