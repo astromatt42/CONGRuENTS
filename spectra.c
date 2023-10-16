@@ -30,6 +30,8 @@
 
 #include "file_io.h"
 
+#include "MSP_funcs.h"
+
 double q_p_inject = 2.2;
 double q_e_inject = 2.2;
 
@@ -495,6 +497,10 @@ if (i == 10){f_cal[i][j] = f_cal[i][j] * 0.1;}
     if (spec_SY_2_z2){for (i = 0; i < n_gal; i++){spec_SY_2_z2[i] = malloc(sizeof *spec_SY_2_z2[i] * n_E_gam);}}
 
 
+    double **spec_MSP = malloc(sizeof *spec_MSP * n_gal);
+    if (spec_MSP){for (i = 0; i < n_gal; i++){spec_MSP[i] = malloc(sizeof *spec_MSP[i] * n_E_gam);}}
+    double **spec_IC_MSP = malloc(sizeof *spec_IC_MSP * n_gal);
+    if (spec_IC_MSP){for (i = 0; i < n_gal; i++){spec_IC_MSP[i] = malloc(sizeof *spec_IC_MSP[i] * n_E_gam);}}
 
 
     double **Q_e_1_z1 = malloc(sizeof *Q_e_1_z1 * n_gal);
@@ -505,6 +511,9 @@ if (i == 10){f_cal[i][j] = f_cal[i][j] * 0.1;}
     if (Q_e_2_z1){for (i = 0; i < n_gal; i++){Q_e_2_z1[i] = malloc(sizeof *Q_e_2_z1[i] * n_T_CR);}}
     double **Q_e_2_z2 = malloc(sizeof *Q_e_2_z2 * n_gal);
     if (Q_e_2_z2){for (i = 0; i < n_gal; i++){Q_e_2_z2[i] = malloc(sizeof *Q_e_2_z2[i] * n_T_CR);}}
+
+    double **Q_e_MSP = malloc(sizeof *Q_e_MSP * n_gal);
+    if (Q_e_MSP){for (i = 0; i < n_gal; i++){Q_e_MSP[i] = malloc(sizeof *Q_e_MSP[i] * n_T_CR);}}
 
     double **q_p_SS_z1 = malloc(sizeof *q_p_SS_z1 * n_gal);
     if (q_p_SS_z1){for (i = 0; i < n_gal; i++){q_p_SS_z1[i] = malloc(sizeof *q_p_SS_z1[i] * n_T_CR);}}
@@ -517,6 +526,8 @@ if (i == 10){f_cal[i][j] = f_cal[i][j] * 0.1;}
     double **q_e_SS_2_z2 = malloc(sizeof *q_e_SS_2_z2 * n_gal);
     if (q_e_SS_2_z2){for (i = 0; i < n_gal; i++){q_e_SS_2_z2[i] = malloc(sizeof *q_e_SS_2_z2[i] * n_T_CR);}}
 
+    double **q_e_SS_MSP = malloc(sizeof *q_e_SS_MSP * n_gal);
+    if (q_e_SS_MSP){for (i = 0; i < n_gal; i++){q_e_SS_MSP[i] = malloc(sizeof *q_e_SS_MSP[i] * n_T_CR);}}
 
     double **tau_FF = malloc(sizeof *tau_FF * n_gal);
     if (tau_FF){for (i = 0; i < n_gal; i++){tau_FF[i] = malloc(sizeof *tau_FF[i] * n_E_gam);}}
@@ -542,7 +553,8 @@ if (i == 10){f_cal[i][j] = f_cal[i][j] * 0.1;}
 
 
 
-    gsl_spline_object_1D De_gso1D_z1, De_gso1D_z2, gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, gso_1D_Q_inject_1_z2, gso_1D_Q_inject_2_z2, qe_1_z1_so, qe_2_z1_so, qe_1_z2_so, qe_2_z2_so;
+    gsl_spline_object_1D De_gso1D_z1, De_gso1D_z2, gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, gso_1D_Q_inject_1_z2, 
+                         gso_1D_Q_inject_2_z2, gso_1D_Q_inject_MSP, qe_1_z1_so, qe_2_z1_so, qe_1_z2_so, qe_2_z2_so, qe_MSP_so;
 
     gsl_spline_object_2D gso2D_IC;
     gsl_spline_object_2D gso2D_IC_Gamma;
@@ -550,7 +562,7 @@ if (i == 10){f_cal[i][j] = f_cal[i][j] * 0.1;}
     printf("%s \n", "Calculating spectra:");
     fflush(stdout);
 
-    #pragma omp parallel for schedule(guided) private(j, k, qe_1_z1_so, qe_2_z1_so, qe_1_z2_so, qe_2_z2_so, De_gso1D_z1, De_gso1D_z2, nphot_params, gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, gso_1D_Q_inject_1_z2, gso_1D_Q_inject_2_z2, E_crit__GeV, seconds, gso2D_IC, gso2D_IC_Gamma, gso1D_fcal, t_loss_s ) firstprivate( gso2D_BS, gso1D_SY )
+    #pragma omp parallel for schedule(guided) private(j, k, qe_1_z1_so, qe_2_z1_so, qe_1_z2_so, qe_2_z2_so, qe_MSP_so, De_gso1D_z1, De_gso1D_z2, nphot_params, gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, gso_1D_Q_inject_1_z2, gso_1D_Q_inject_2_z2, gso_1D_Q_inject_MSP, E_crit__GeV, seconds, gso2D_IC, gso2D_IC_Gamma, gso1D_fcal, t_loss_s ) firstprivate( gso2D_BS, gso1D_SY )
 
     for (i = 0; i < n_gal; i++)
     {
@@ -603,11 +615,18 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
         //spline object on total energy - not kinetic
         gso_1D_Q_inject_2_z1 = gsl_so1D( n_T_CR, E_CRe__GeV, Q_e_2_z1[i] );
 
-//        printf("Before SS %lu\n", i);
-//        fflush(stdout);
+        for (j = 0; j < n_T_CR; j++)
+        {
+            Q_e_MSP[i][j] = d2NdEdt_MSP_e___GeVm1( T_CR__GeV[j], L_prompt__ergsm1( M_star__Msol[i] ) );
+        }
+        //spline object on total energy - not kinetic
+        gso_1D_Q_inject_MSP = gsl_so1D( n_T_CR, E_CRe__GeV, Q_e_MSP[i] );
 
-        CRe_steadystate_solve( 1, E_CRe_lims__GeV, 500, n_H__cmm3[i], B__G[i], h__pc[i], 1, &gso2D_IC_Gamma, gso2D_BS, De_gso1D_z1, 
-                               gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, &qe_1_z1_so, &qe_2_z1_so );
+        CRe_steadystate_solve_3( 1, E_CRe_lims__GeV, 500, n_H__cmm3[i], B__G[i], h__pc[i], 1, &gso2D_IC_Gamma, gso2D_BS, De_gso1D_z1, 
+                               gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, gso_1D_Q_inject_MSP, &qe_1_z1_so, &qe_2_z1_so, &qe_MSP_so );
+
+//        CRe_steadystate_solve( 1, E_CRe_lims__GeV, 500, n_H__cmm3[i], B__G[i], h__pc[i], 1, &gso2D_IC_Gamma, gso2D_BS, De_gso1D_z1, 
+//                               gso_1D_Q_inject_1_z1, gso_1D_Q_inject_2_z1, &qe_1_z1_so, &qe_2_z1_so );
             
  
         //Zone 2 diffusion
@@ -628,6 +647,7 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
         }
 
         gso_1D_Q_inject_2_z2 = gsl_so1D( n_T_CR, E_CRe__GeV, Q_e_2_z2[i] );
+
 
         CRe_steadystate_solve( 2, E_CRe_lims__GeV, 500, n_H__cmm3[i]/1000., B_halo__G[i], 50.*h__pc[i], 1, &gso2D_IC_Gamma, gso2D_BS,
                                De_gso1D_z2, gso_1D_Q_inject_1_z2, gso_1D_Q_inject_2_z2, &qe_1_z2_so, &qe_2_z2_so );
@@ -662,8 +682,8 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
             spec_SY_1_z2[i][j] = eps_SY_4( E_gam__GeV[j], B_halo__G[i], gso1D_SY, qe_1_z2_so );
             spec_SY_2_z2[i][j] = eps_SY_4( E_gam__GeV[j], B_halo__G[i], gso1D_SY, qe_2_z2_so );
 
-
-
+            spec_MSP[i][j] = d2NdEdt_MSP_prompt___GeVm1( E_gam__GeV[j], L_prompt__ergsm1( M_star__Msol[i] ) );
+            spec_IC_MSP[i][j] = eps_IC_3( E_gam__GeV[j], gso2D_IC, qe_MSP_so ) * exp(-tau_FF[i][j]);
 
             spec_pi_fcal1[i][j] = eps_pi_fcal1( E_gam__GeV[j], n_H__cmm3[i], C[i], T_p_cutoff__GeV, gso1D_fcal );
 
@@ -808,11 +828,13 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
         gsl_so1D_free( qe_2_z1_so );
         gsl_so1D_free( qe_1_z2_so );
         gsl_so1D_free( qe_2_z2_so );
+        gsl_so1D_free( qe_MSP_so );
 
         gsl_so1D_free( gso_1D_Q_inject_1_z1 );
         gsl_so1D_free( gso_1D_Q_inject_2_z1 );
         gsl_so1D_free( gso_1D_Q_inject_1_z2 );
         gsl_so1D_free( gso_1D_Q_inject_2_z2 );
+        gsl_so1D_free( gso_1D_Q_inject_MSP );
         gsl_so1D_free( De_gso1D_z1 );
         gsl_so1D_free( De_gso1D_z2 );
 
@@ -989,14 +1011,14 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
 
     gsl_spline_object_1D gso1D_data;
 
-    char filelist[14][19] = { "/spec_pi.txt", "/spec_IC_1_z1.txt", "/spec_IC_2_z1.txt", "/spec_BS_1_z1.txt", "/spec_BS_2_z1.txt", 
+    char filelist[16][19] = { "/spec_pi.txt", "/spec_IC_1_z1.txt", "/spec_IC_2_z1.txt", "/spec_BS_1_z1.txt", "/spec_BS_2_z1.txt", 
                         "/spec_SY_1_z1.txt", "/spec_SY_2_z1.txt", "/spec_IC_1_z2.txt", "/spec_IC_2_z2.txt", "/spec_SY_1_z2.txt", 
-                        "/spec_SY_2_z2.txt", "/spec_pi_fcal1.txt", "/spec_nu.txt", "/spec_FF.txt" };
+                        "/spec_SY_2_z2.txt", "/spec_pi_fcal1.txt", "/spec_nu.txt", "/spec_FF.txt", "/spec_MSP.txt", "/spec_IC_MSP.txt" };
 
-    double **speclist[14] = { spec_pi, spec_IC_1_z1, spec_IC_2_z1, spec_BS_1_z1, spec_BS_2_z1, spec_SY_1_z1, spec_SY_2_z1,
-                           spec_IC_1_z2, spec_IC_2_z2, spec_SY_1_z2, spec_SY_2_z2, spec_pi_fcal1, spec_nu, spec_FF };
+    double **speclist[16] = { spec_pi, spec_IC_1_z1, spec_IC_2_z1, spec_BS_1_z1, spec_BS_2_z1, spec_SY_1_z1, spec_SY_2_z1,
+                           spec_IC_1_z2, spec_IC_2_z2, spec_SY_1_z2, spec_SY_2_z2, spec_pi_fcal1, spec_nu, spec_FF, spec_MSP, spec_IC_MSP };
 
-    for (k = 0; k < 14; k++)
+    for (k = 0; k < 16; k++)
     {
         for (i = 0; i < n_gal; i++)
         {
@@ -1010,11 +1032,11 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
         write_2D_spec_file_obs( n_gal, n_E_gam, data, E_gam__GeV, tau_gg, tau_EBL, distmod, "E^2 dN/dE [GeV cmm2 sm1]", string_cat(outfp, filelist[k]) );
     }
 
-    char filelist_2[14][28] = { "/spec_pi_internal.txt", "/spec_IC_1_z1_internal.txt", "/spec_IC_2_z1_internal.txt", "/spec_BS_1_z1_internal.txt", "/spec_BS_2_z1_internal.txt", 
+    char filelist_2[16][28] = { "/spec_pi_internal.txt", "/spec_IC_1_z1_internal.txt", "/spec_IC_2_z1_internal.txt", "/spec_BS_1_z1_internal.txt", "/spec_BS_2_z1_internal.txt", 
                         "/spec_SY_1_z1_internal.txt", "/spec_SY_2_z1_internal.txt", "/spec_IC_1_z2_internal.txt", "/spec_IC_2_z2_internal.txt", "/spec_SY_1_z2_internal.txt", 
-                        "/spec_SY_2_z2_internal.txt", "/spec_pi_fcal1_internal.txt", "/spec_nu_internal.txt", "/spec_FF_internal.txt" };
+                        "/spec_SY_2_z2_internal.txt", "/spec_pi_fcal1_internal.txt", "/spec_nu_internal.txt", "/spec_FF_internal.txt", "/spec_MSP_internal.txt", "/spec_IC_MSP_internal.txt" };
 
-    for (k = 0; k < 14; k++)
+    for (k = 0; k < 16; k++)
     {
         write_2D_spec_file_internal( n_gal, n_E_gam, speclist[k], E_gam__GeV, tau_gg, "E^2 dN/dE [GeV sm1]", string_cat(outfp, filelist_2[k]) );
     }
@@ -1031,7 +1053,7 @@ if (i == 10){Q_e_1_z1[i][j] = J( T_CR__GeV[j], Ce_Esm1[i], q_e_inject, m_e__GeV,
         for (j = 0; j < n_E_gam; j++)
         {
             spectot[j] = (spec_pi[i][j] + spec_IC_1_z1[i][j] + spec_IC_2_z1[i][j] + spec_BS_1_z1[i][j] + spec_BS_2_z1[i][j] + spec_SY_1_z1[i][j] + spec_SY_2_z1[i][j] + 
-                           spec_IC_1_z2[i][j] + spec_IC_2_z2[i][j] + spec_SY_1_z2[i][j] + spec_SY_2_z2[i][j]) * exp(-tau_gg[i][j]);
+                           spec_IC_1_z2[i][j] + spec_IC_2_z2[i][j] + spec_SY_1_z2[i][j] + spec_SY_2_z2[i][j] + spec_MSP[i][j] + spec_IC_MSP[i][j]) * exp(-tau_gg[i][j]);
         }
         gso1D_data = gsl_so1D( n_E_gam, E_gam__GeV, spectot );
         L_gamma[i] = spec_integrate_gso1D_lim( gso1D_data, 0.1, 100. );
