@@ -11,3 +11,4 @@ Compile create_interp_objects.c to compute the interpolation objects separately 
 
 For the main code compile spectra.c and link to the necessary libraries
 
+You will need some of the files from this repo: https://github.com/astromatt42/share
